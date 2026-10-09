@@ -90,7 +90,7 @@ fzl-emacs-bookmarks/
 Para que os navegadores possam conversar com o banco SQLite e com o `buku` localmente, execute o instalador:
 
 ```bash
-cd /home/wgn/mnt/ext4/Projects-Srcs/Projects-Srcs-Desktop/fzl-emacs-bookmarks
+cd /home/wgn/mnt/ext4/Projects-Srcs/Projects-Srcs-Desktop/fzl-emacs/gitsubmodules/fzl-emacs-extension
 make install-host
 # ou diretamente:
 ./native-host/install-native-host.sh
@@ -111,7 +111,7 @@ Esse script registra o manifesto do host automaticamente em:
 2. No canto superior direito, ative o botão **Modo do desenvolvedor** (*Developer mode*).
 3. Clique em **Carregar sem compactação** (*Load unpacked*).
 4. Selecione a pasta do projeto:
-   `/home/wgn/mnt/ext4/Projects-Srcs/Projects-Srcs-Desktop/fzl-emacs-bookmarks`
+   `/home/wgn/mnt/ext4/Projects-Srcs/Projects-Srcs-Desktop/fzl-emacs/gitsubmodules/fzl-emacs-extension`
 5. Pronto! A extensão aparecerá na sua barra de ferramentas com o ícone do FZL Buku.
    *(Dica: clique no ícone de "quebra-cabeça" na barra do navegador e fixe o FZL Buku para acesso rápido).*
 
@@ -119,7 +119,7 @@ Esse script registra o manifesto do host automaticamente em:
 1. Abra o Firefox e acerte a URL: `about:debugging#/runtime/this-firefox`
 2. Clique no botão **Carregar extensão temporária...** (*Load Temporary Add-on...*).
 3. Selecione o arquivo `manifest.json` dentro da pasta:
-   `/home/wgn/mnt/ext4/Projects-Srcs/Projects-Srcs-Desktop/fzl-emacs-bookmarks/manifest.json`
+   `/home/wgn/mnt/ext4/Projects-Srcs/Projects-Srcs-Desktop/fzl-emacs/gitsubmodules/fzl-emacs-extension/manifest.json`
 4. A extensão será carregada imediatamente no Firefox com o ID `fzl-emacs-buku@fzl.desktop`.
 
 ---
