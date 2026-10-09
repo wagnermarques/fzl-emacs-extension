@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FZL Emacs Buku Bookmarks</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body class="theme-dark">
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <img src="../icons/icon-32.png" alt="Logo" class="logo">
+        <div class="title-group">
+          <h1>FZL Buku</h1>
+          <span class="subtitle">Emacs Integration</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div id="emacsStatusBadge" class="status-badge" title="Emacs server status">
+          <span class="status-dot"></span>
+          <span class="status-label">Emacs</span>
+        </div>
+        <button id="btnSettings" class="icon-btn" title="Settings & Preferences">⚙️</button>
+      </div>
+    </header>
+
+    <!-- Notification Toast Bar -->
+    <div id="toastBar" class="toast-bar hidden"></div>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs">
+      <button class="nav-tab active" data-tab="tabAdd">
+        <span class="tab-icon">📌</span> Add Page
+      </button>
+      <button class="nav-tab" data-tab="tabSearch">
+        <span class="tab-icon">🔍</span> Search (<span id="bookmarkTotalBadge">0</span>)
+      </button>
+      <button class="nav-tab" data-tab="tabBatch">
+        <span class="tab-icon">📑</span> Batch Tabs
+      </button>
+      <button class="nav-tab" data-tab="tabEmacs">
+        <span class="tab-icon">⚡</span> Emacs Hub
+      </button>
+    </nav>
+
+    <!-- Tab 1: Add Current Page -->
+    <section id="tabAdd" class="tab-panel active">
+      <div id="alreadyBookmarkedAlert" class="alert-box info-box hidden">
+        <span class="alert-icon">★</span>
+        <div class="alert-content">
+          <strong>Already in Buku (<span id="existingIndex">#0</span>)</strong>
+          <span id="existingTagsText">Tags: none</span>
+        </div>
+      </div>
+
+      <form id="addBookmarkForm" class="form-layout">
+        <div class="form-group">
+          <label for="pageTitle">Title</label>
+          <input type="text" id="pageTitle" placeholder="Page Title" required>
+        </div>
+
+        <div class="form-group">
+          <label for="pageUrl">URL</label>
+          <input type="url" id="pageUrl" placeholder="https://..." required>
+        </div>
+
+        <div class="form-group">
+          <label for="pageTags">Tags / Groups (comma separated)</label>
+          <div class="tags-input-wrapper">
+            <input type="text" id="pageTags" placeholder="e.g. dev, emacs, ai, linux" autocomplete="off">
+            <div id="tagsAutocompleteList" class="autocomplete-dropdown hidden"></div>
+          </div>
+          <!-- Quick Popular Tag Chips -->
+          <div class="quick-tags-container">
+            <span class="quick-tags-label">Quick Tags:</span>
+            <div id="quickTagsChips" class="tag-chips-row">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="pageComment">Comment / Description (optional)</label>
+          <textarea id="pageComment" rows="2" placeholder="Notes, quote or summary..."></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" id="btnSaveBookmark" class="btn btn-primary">
+            💾 <span id="btnSaveText">Save to Buku</span>
+          </button>
+          <button type="button" id="btnAddViaEmacs" class="btn btn-secondary" title="Open add prompt in Emacs">
+            🟣 Open in Emacs
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Tab 2: Search & Open Bookmarks -->
+    <section id="tabSearch" class="tab-panel">
+      <div class="search-controls">
+        <div class="search-input-wrapper">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="searchBox" placeholder="Search by title, url, tag, description..." autofocus>
+          <button id="btnClearSearch" class="clear-btn hidden" title="Clear">✕</button>
+        </div>
+
+        <!-- Tag Filter Pills Carousel -->
+        <div class="tags-filter-bar">
+          <div id="tagsFilterCarousel" class="tags-carousel">
+            <button class="tag-pill active" data-tag="all">All</button>
+            <!-- Dynamically populated tags -->
+          </div>
+        </div>
+
+        <!-- Open all in tag action bar -->
+        <div id="openAllBar" class="open-all-bar hidden">
+          <span id="openAllCountText">12 bookmarks in 'dev'</span>
+          <button id="btnOpenAllInTag" class="btn btn-small btn-primary" title="Open all links of this group in separate tabs">
+            🚀 Open All in Tabs
+          </button>
+        </div>
+      </div>
+
+      <!-- Bookmarks List -->
+      <div id="bookmarksList" class="bookmarks-list">
+        <div class="empty-state">Loading bookmarks...</div>
+      </div>
+    </section>
+
+    <!-- Tab 3: Batch Save Tabs -->
+    <section id="tabBatch" class="tab-panel">
+      <div class="batch-header">
+        <div class="batch-summary">
+          <span id="batchSelectedCount">0</span> of <span id="batchTotalCount">0</span> tabs selected
+        </div>
+        <div class="batch-toggles">
+          <button type="button" id="btnBatchSelectAll" class="btn btn-link">Select All</button>
+          <button type="button" id="btnBatchDeselectAll" class="btn btn-link">Deselect All</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="batchTagInput">Apply Tag / Group to Selected Tabs</label>
+        <input type="text" id="batchTagInput" placeholder="e.g. project-x, research, reading" required>
+      </div>
+
+      <div id="tabsList" class="tabs-checklist">
+        <!-- Dynamically populated tabs in window -->
+      </div>
+
+      <div class="form-actions batch-actions">
+        <button type="button" id="btnSaveBatchTabs" class="btn btn-primary btn-block">
+          📑 Save Selected Tabs to Buku
+        </button>
+      </div>
+    </section>
+
+    <!-- Tab 4: Emacs Hub -->
+    <section id="tabEmacs" class="tab-panel">
+      <div class="hub-status-card">
+        <div class="hub-status-header">
+          <span class="hub-status-title">Emacs Client Status</span>
+          <span id="hubEmacsStatusBadge" class="badge">Checking...</span>
+        </div>
+        <div class="hub-status-details">
+          <div class="hub-detail-row">
+            <span class="label">Buku Database:</span>
+            <span id="hubDbPath" class="value truncate" title="">...</span>
+          </div>
+          <div class="hub-detail-row">
+            <span class="label">Total Bookmarks:</span>
+            <span id="hubTotalBookmarks" class="value">0</span>
+          </div>
+          <div class="hub-detail-row">
+            <span class="label">Backend Mode:</span>
+            <span id="hubBackendMode" class="value">Native Messaging</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="hub-actions-section">
+        <h3>FZL Emacs Commands</h3>
+        <p class="section-desc">Trigger Emacs commands directly from your browser:</p>
+        
+        <div class="hub-command-cards">
+          <button class="cmd-card" data-emacs-action="search">
+            <div class="cmd-icon">🔍</div>
+            <div class="cmd-info">
+              <span class="cmd-name">Search & Open in Emacs</span>
+              <span class="cmd-keys">C-c d b s</span>
+              <span class="cmd-desc">Interactive fuzzy search inside Emacs</span>
+            </div>
+          </button>
+
+          <button class="cmd-card" data-emacs-action="manager">
+            <div class="cmd-icon">🗂️</div>
+            <div class="cmd-info">
+              <span class="cmd-name">Open Buku Manager (ebuku)</span>
+              <span class="cmd-keys">C-c d b b</span>
+              <span class="cmd-desc">Full buffer visual bookmarks table</span>
+            </div>
+          </button>
+
+          <button class="cmd-card" data-emacs-action="start_day">
+            <div class="cmd-icon">🌅</div>
+            <div class="cmd-info">
+              <span class="cmd-name">Start-Day Routine URLs</span>
+              <span class="cmd-keys">C-c d b S</span>
+              <span class="cmd-desc">Open daily work links Org buffer</span>
+            </div>
+          </button>
+
+          <button class="cmd-card" data-emacs-action="browse_tag">
+            <div class="cmd-icon">🏷️</div>
+            <div class="cmd-info">
+              <span class="cmd-name">Filter by Tag / Group</span>
+              <span class="cmd-keys">C-c d b g</span>
+              <span class="cmd-desc">Browse bookmarks grouped by tag</span>
+            </div>
+          </button>
+
+          <button class="cmd-card" data-emacs-action="tutorial">
+            <div class="cmd-icon">📖</div>
+            <div class="cmd-info">
+              <span class="cmd-name">Buku Tutorial & Guia (Org)</span>
+              <span class="cmd-keys">C-c d b t</span>
+              <span class="cmd-desc">Open Portuguese tutorial in Emacs</span>
+            </div>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <div id="footerStatus" class="footer-status truncate">
+        ● Connecting to Buku...
+      </div>
+      <div class="footer-links">
+        <a href="#" id="linkReload" title="Reload bookmarks">↻ Sync</a>
+      </div>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FZL Emacs Buku - Settings & Diagnostics</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body class="theme-dark">
+  <div class="settings-container">
+    <header class="settings-header">
+      <div class="brand">
+        <img src="../icons/icon-48.png" alt="Logo" class="logo">
+        <div>
+          <h1>FZL Emacs Buku Settings</h1>
+          <p class="subtitle">Cross-browser extension configuration & diagnostic center</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="btnSaveTop" class="btn btn-primary">Save Settings</button>
+      </div>
+    </header>
+
+    <div id="statusToast" class="toast hidden"></div>
+
+    <main class="settings-main">
+      <!-- Section 1: Paths & Binaries -->
+      <section class="card">
+        <h2>🛠️ Paths & Environment</h2>
+        <p class="card-desc">Configure the locations of your Buku SQLite database and local tools.</p>
+
+        <div class="form-group">
+          <label for="dbPath">Buku SQLite Database Path</label>
+          <div class="input-with-reset">
+            <input type="text" id="dbPath" placeholder="/path/to/bookmarks.db" required>
+            <button type="button" id="btnResetDb" class="btn btn-small btn-secondary" title="Reset to fzl-emacs repo default">fzl-emacs Default</button>
+          </div>
+          <span class="field-hint">Default in your setup: <code>/home/wgn/mnt/ext4/Projects-Srcs/Projects-Srcs-Desktop/fzl-emacs/bookmarks/bookmarks.db</code></span>
+        </div>
+
+        <div class="form-group">
+          <label for="bukuBin">Buku CLI Executable Path</label>
+          <input type="text" id="bukuBin" placeholder="buku or /home/wgn/.local/bin/buku">
+          <span class="field-hint">Used for consistent adding, tag appending, and Netscape HTML exports.</span>
+        </div>
+
+        <div class="form-group">
+          <label for="emacsclientBin">Emacsclient Binary Path</label>
+          <input type="text" id="emacsclientBin" placeholder="emacsclient or /path/to/emacsclient">
+          <span class="field-hint">Default in your setup: <code>/home/wgn/WORKING/Progsativos/ides/emacs/bin/emacsclient</code></span>
+        </div>
+      </section>
+
+      <!-- Section 2: Communication Mode -->
+      <section class="card">
+        <h2>🔌 Communication & Backend</h2>
+        <p class="card-desc">Choose how the browser extension talks to the local Linux environment.</p>
+
+        <div class="form-group">
+          <label for="commMode">Backend Driver</label>
+          <select id="commMode">
+            <option value="auto">Auto (Native Messaging with HTTP Bridge fallback) [Recommended]</option>
+            <option value="native">Native Messaging Only (stdio protocol)</option>
+            <option value="http">Local HTTP Bridge Only (http://127.0.0.1:8765)</option>
+          </select>
+          <span class="field-hint">
+            <strong>Native Messaging:</strong> Zero-port, high performance stdio protocol registered in Chrome & Firefox.<br>
+            <strong>Local HTTP Bridge:</strong> Optional REST server (<code>native-host/fzl_buku_server.py</code>).
+          </span>
+        </div>
+      </section>
+
+      <!-- Section 3: Behavior & Tagging -->
+      <section class="card">
+        <h2>🏷️ Tagging & Shortcuts</h2>
+
+        <div class="form-row">
+          <div class="form-group col-half">
+            <label for="defaultTag">Default Tag (Context Menu)</label>
+            <input type="text" id="defaultTag" placeholder="general">
+          </div>
+
+          <div class="form-group col-half">
+            <label for="quickSaveTag">Quick-Save Tag (Alt+Shift+B)</label>
+            <input type="text" id="quickSaveTag" placeholder="staging">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="themeSelect">Visual Theme</label>
+          <select id="themeSelect">
+            <option value="dark">Dark Theme (Doom Emacs / One-Dark)</option>
+            <option value="light">Light Theme</option>
+          </select>
+        </div>
+      </section>
+
+      <!-- Section 4: Live Diagnostics -->
+      <section class="card">
+        <div class="card-header-action">
+          <div>
+            <h2>🩺 Live Diagnostics & Self-Test</h2>
+            <p class="card-desc">Verify that your Buku database, CLI, and Emacs connection are functioning.</p>
+          </div>
+          <button id="btnRunDiagnostics" class="btn btn-secondary">Run Diagnostics</button>
+        </div>
+
+        <div id="diagnosticsOutput" class="diag-output">
+          <p class="diag-placeholder">Click 'Run Diagnostics' to test your environment.</p>
+        </div>
+      </section>
+
+      <!-- Section 5: Emacs Server Helper -->
+      <section class="card info-card">
+        <h2>💡 Emacs Server & Workflow Tips</h2>
+        <p class="info-text">
+          To allow the browser extension to trigger <strong>Search in Emacs</strong> (<code>C-c d b s</code>) or <strong>Open ebuku</strong> (<code>C-c d b b</code>), ensure the Emacs server is running:
+        </p>
+        <div class="code-block">
+          <code>;; Add to your init.el to ensure the Emacs server starts automatically:
+(require 'server)
+(unless (server-running-p)
+  (server-start))</code>
+        </div>
+        <p class="info-text" style="margin-top: 10px;">
+          Or start it on-demand inside your running Emacs session with: <code>M-x server-start RET</code>.
+        </p>
+      </section>
+
+      <div class="settings-actions">
+        <button id="btnSaveBottom" class="btn btn-primary btn-large">Save All Preferences</button>
+      </div>
+    </main>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

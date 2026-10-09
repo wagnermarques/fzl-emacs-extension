@@ -1,0 +1,67 @@
+{
+  "manifest_version": 3,
+  "name": "FZL Emacs Buku Bookmarks",
+  "version": "1.0.0",
+  "description": "Cross-browser extension (Chromium & Firefox) to add, search, and open Buku bookmarks integrated with fzl-emacs.",
+  "author": "wgn / fzl-emacs",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "fzl-emacs-buku@fzl.desktop",
+      "strict_min_version": "109.0"
+    }
+  },
+  "permissions": [
+    "tabs",
+    "activeTab",
+    "storage",
+    "contextMenus",
+    "nativeMessaging"
+  ],
+  "host_permissions": [
+    "http://127.0.0.1:8765/*",
+    "http://localhost:8765/*"
+  ],
+  "background": {
+    "scripts": ["background/background.js"],
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "FZL Emacs Buku Bookmarks",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "omnibox": {
+    "keyword": "bk"
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+Y",
+        "mac": "Command+Shift+Y"
+      },
+      "description": "Open FZL Emacs Buku Bookmarks popup"
+    },
+    "quick_add_bookmark": {
+      "suggested_key": {
+        "default": "Alt+Shift+B",
+        "mac": "Alt+Shift+B"
+      },
+      "description": "Quick add current tab to Buku"
+    }
+  },
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": true
+  }
+}
