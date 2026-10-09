@@ -34,7 +34,7 @@ cmd_package() {
     rm -f "${CHROMIUM_ZIP}"
 
     TMP_CHROME="$(mktemp -d)"
-    cp -r icons background popup options README.md "${TMP_CHROME}/"
+    cp -r icons background popup options README.md LICENSE "${TMP_CHROME}/"
     cp manifest.chromium.json "${TMP_CHROME}/manifest.json"
     (cd "${TMP_CHROME}" && zip -rq "${CHROMIUM_ZIP}" .)
     rm -rf "${TMP_CHROME}"
@@ -46,7 +46,7 @@ cmd_package() {
     rm -f "${FIREFOX_ZIP}"
 
     TMP_FF="$(mktemp -d)"
-    cp -r icons background popup options README.md "${TMP_FF}/"
+    cp -r icons background popup options README.md LICENSE "${TMP_FF}/"
     cp manifest.firefox.json "${TMP_FF}/manifest.json"
     (cd "${TMP_FF}" && zip -rq "${FIREFOX_ZIP}" .)
     rm -rf "${TMP_FF}"

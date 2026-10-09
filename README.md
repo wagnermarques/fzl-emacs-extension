@@ -190,3 +190,11 @@ make run-server
 python3 native-host/fzl_buku_server.py
 ```
 O servidor escuta em `http://127.0.0.1:8765`. Nas **Configurações da extensão** (ícone ⚙️), altere o Driver para *Local HTTP Bridge*.
+
+---
+
+## 📄 Licença / License
+
+Distribuído sob a licença **GNU General Public License v3.0 (GPLv3)**.  
+Consulte o arquivo [`LICENSE`](LICENSE) para obter os termos e condições completos.
+
