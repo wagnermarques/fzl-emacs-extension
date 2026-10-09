@@ -81,6 +81,32 @@ def resolve_emacsclient(custom_path: Optional[str] = None) -> str:
     return "emacsclient"
 
 def is_emacs_server_active(emacsclient_bin: str) -> bool:
+    # 1. Environment variable override (set when Emacs itself executes the host/installer)
+    if os.environ.get("FZL_EMACS_SERVER_ACTIVE") == "1" or os.environ.get("INSIDE_EMACS"):
+        return True
+
+    # 2. Check if Emacs server socket file exists on disk
+    server_socket = None
+    server_file = os.environ.get("EMACS_SERVER_FILE")
+    if server_file and os.path.exists(server_file):
+        server_socket = server_file
+    else:
+        candidates = []
+        xdg_runtime = os.environ.get("XDG_RUNTIME_DIR")
+        if xdg_runtime:
+            candidates.append(os.path.join(xdg_runtime, "emacs", os.environ.get("EMACS_SERVER_NAME", "server")))
+        candidates.append(f"/tmp/emacs{os.getuid()}/{os.environ.get('EMACS_SERVER_NAME', 'server')}")
+        for cand in candidates:
+            if os.path.exists(cand):
+                server_socket = cand
+                break
+
+    if not server_socket:
+        return False
+
+    if os.environ.get("FZL_SKIP_EMACSCLIENT_CHECK") == "1":
+        return True
+
     try:
         proc = subprocess.run(
             [emacsclient_bin, "-e", "t"],
