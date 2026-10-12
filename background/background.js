@@ -34,19 +34,24 @@ async function getSettings() {
  * Native Messaging sender
  */
 function sendNativeMessagePromise(host, message) {
+  console.log(`[fzl-buku] Sending to Native Host (${host}):`, message);
   return new Promise((resolve, reject) => {
     try {
       browserAPI.runtime.sendNativeMessage(host, message, (response) => {
         const lastErr = browserAPI.runtime.lastError;
         if (lastErr) {
+          console.error("[fzl-buku] Native Host Error:", lastErr.message);
           reject(new Error(lastErr.message || "Native messaging error"));
         } else if (response) {
+          console.log("[fzl-buku] Native Host Response:", response);
           resolve(response);
         } else {
+          console.error("[fzl-buku] Native Host Empty Response");
           reject(new Error("No response from native messaging host"));
         }
       });
     } catch (e) {
+      console.error("[fzl-buku] Native Host Exception:", e);
       reject(e);
     }
   });

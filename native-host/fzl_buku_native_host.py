@@ -112,6 +112,7 @@ def is_emacs_server_active(emacsclient_bin: str) -> bool:
             [emacsclient_bin, "-e", "t"],
             capture_output=True,
             text=True,
+            stdin=subprocess.DEVNULL,
             timeout=1.5
         )
         return proc.returncode == 0
@@ -314,7 +315,7 @@ def handle_add_bookmark(data: Dict[str, Any]) -> Dict[str, Any]:
     # 1. Try Buku CLI
     env = os.environ.copy()
     env["PYTHONWARNINGS"] = "ignore"
-    cmd = [buku_bin, "--db", db_path, "--nostdin", "--tacit", "--np", "-a", url]
+    cmd = [buku_bin, "--nostdin", "--offline", "--db", db_path, "--tacit", "--np", "-a", url]
     if tags_str:
         cmd.append(tags_str)
     if desc:
@@ -323,7 +324,7 @@ def handle_add_bookmark(data: Dict[str, Any]) -> Dict[str, Any]:
         cmd.extend(["--title", title])
 
     try:
-        proc = subprocess.run(cmd, capture_output=True, text=True, env=env)
+        proc = subprocess.run(cmd, capture_output=True, text=True, env=env, stdin=subprocess.DEVNULL, timeout=10)
         out = (proc.stdout + " " + proc.stderr).strip()
         log(f"Buku add result: code={proc.returncode}, out={out}")
 
@@ -335,12 +336,12 @@ def handle_add_bookmark(data: Dict[str, Any]) -> Dict[str, Any]:
             index = m.group(1) if m else None
             if index and tags_str:
                 # Append tags using buku -u <index> --tag + <tags>
-                upd_cmd = [buku_bin, "--db", db_path, "--nostdin", "--tacit", "--np", "-u", index, "--tag", "+", tags_str]
+                upd_cmd = [buku_bin, "--nostdin", "--db", db_path, "--tacit", "--np", "-u", index, "--tag", "+", tags_str]
                 if desc:
                     upd_cmd.extend(["-c", desc])
                 if title:
                     upd_cmd.extend(["--title", title])
-                subprocess.run(upd_cmd, capture_output=True, text=True, env=env)
+                subprocess.run(upd_cmd, capture_output=True, text=True, env=env, stdin=subprocess.DEVNULL, timeout=10)
                 return {
                     "success": True,
                     "action": "updated",
@@ -456,8 +457,8 @@ def handle_delete_bookmark(data: Dict[str, Any]) -> Dict[str, Any]:
     try:
         env = os.environ.copy()
         env["PYTHONWARNINGS"] = "ignore"
-        cmd = [buku_bin, "--db", db_path, "--nostdin", "--tacit", "--np", "-d", str(item_id)]
-        proc = subprocess.run(cmd, capture_output=True, text=True, env=env)
+        cmd = [buku_bin, "--nostdin", "--db", db_path, "--tacit", "--np", "-d", str(item_id)]
+        proc = subprocess.run(cmd, capture_output=True, text=True, env=env, stdin=subprocess.DEVNULL, timeout=10)
         if proc.returncode == 0:
             return {"success": True, "id": item_id, "message": f"Bookmark #{item_id} deleted."}
     except Exception as e:
@@ -542,6 +543,7 @@ def handle_open_in_emacs(data: Dict[str, Any]) -> Dict[str, Any]:
             [emacsclient_bin, "-e", lisp_expr],
             capture_output=True,
             text=True,
+            stdin=subprocess.DEVNULL,
             timeout=3.0
         )
         if proc.returncode == 0:
