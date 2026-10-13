@@ -45,6 +45,7 @@ def resolve_db_path(custom_path: Optional[str] = None) -> str:
         custom_path,
         cfg.get("db_path"),
         os.environ.get("BUKU_DB_PATH"),
+        "/run/media/wgn/ext4/Projects-Srcs/Projects-Srcs-Desktop/fzl-emacs/bookmarks/bookmarks.db",
         DEFAULT_EMACS_REPO_DB,
         os.path.expanduser("~/.local/share/buku/bookmarks.db"),
     ]
@@ -312,7 +313,22 @@ def handle_add_bookmark(data: Dict[str, Any]) -> Dict[str, Any]:
         tags_list = [t.strip().lower() for t in raw_tags.split(",") if t.strip()]
     tags_str = ",".join(tags_list)
 
-    # 1. Try Buku CLI
+    # 1. Proactively check if URL already exists in SQLite (with or without trailing slash)
+    try:
+        with get_db_connection(db_path) as conn:
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT id FROM bookmarks WHERE URL = ? OR URL = ? OR URL = ? LIMIT 1",
+                (url, url.rstrip("/"), url.rstrip("/") + "/")
+            )
+            existing = cur.fetchone()
+            if existing:
+                log(f"URL already exists in SQLite (#{existing['id']}), appending/updating tags...")
+                return insert_or_update_sqlite(db_path, url, title, tags_list, desc)
+    except Exception as e:
+        log(f"Pre-check SQLite failed: {e}")
+
+    # 2. Try Buku CLI for new URL
     env = os.environ.copy()
     env["PYTHONWARNINGS"] = "ignore"
     cmd = [buku_bin, "--nostdin", "--offline", "--db", db_path, "--tacit", "--np", "-a", url]
@@ -328,42 +344,31 @@ def handle_add_bookmark(data: Dict[str, Any]) -> Dict[str, Any]:
         out = (proc.stdout + " " + proc.stderr).strip()
         log(f"Buku add result: code={proc.returncode}, out={out}")
 
-        # Check if URL already exists
-        if "already exists at index" in out:
-            # Extract index
-            import re
-            m = re.search(r"already exists at index\s+(\d+)", out)
-            index = m.group(1) if m else None
-            if index and tags_str:
-                # Append tags using buku -u <index> --tag + <tags>
-                upd_cmd = [buku_bin, "--nostdin", "--db", db_path, "--tacit", "--np", "-u", index, "--tag", "+", tags_str]
-                if desc:
-                    upd_cmd.extend(["-c", desc])
-                if title:
-                    upd_cmd.extend(["--title", title])
-                subprocess.run(upd_cmd, capture_output=True, text=True, env=env, stdin=subprocess.DEVNULL, timeout=10)
-                return {
-                    "success": True,
-                    "action": "updated",
-                    "id": int(index),
-                    "message": f"URL already exists at index #{index}. Appended tag(s): {tags_str}"
-                }
-            elif index:
-                return {
-                    "success": True,
-                    "action": "exists",
-                    "id": int(index),
-                    "message": f"URL already exists at index #{index}."
-                }
+        # If Buku reported duplicate or constraint error
+        if "already exists at index" in out or "UNIQUE constraint failed" in out:
+            return insert_or_update_sqlite(db_path, url, title, tags_list, desc)
 
-        if proc.returncode == 0:
+        # Successful CLI add with no error
+        if proc.returncode == 0 and "[ERROR]" not in out and "error:" not in out.lower():
+            new_id = None
+            try:
+                with get_db_connection(db_path) as conn:
+                    cur = conn.cursor()
+                    cur.execute("SELECT id FROM bookmarks WHERE URL = ?", (url,))
+                    r = cur.fetchone()
+                    if r:
+                        new_id = r["id"]
+            except Exception:
+                pass
             return {
                 "success": True,
                 "action": "added",
+                "id": new_id,
                 "message": f"Bookmark saved to Buku successfully! ({url})"
             }
         else:
-            # Fallback to direct SQLite insertion if CLI failed
+            # Fallback to direct SQLite insertion if CLI failed or outputted error
+            log(f"Buku CLI reported non-zero or error: {out}, falling back to SQLite")
             return insert_or_update_sqlite(db_path, url, title, tags_list, desc)
 
     except Exception as e:
@@ -374,7 +379,10 @@ def insert_or_update_sqlite(db_path: str, url: str, title: str, tags_list: List[
     try:
         with get_db_connection(db_path) as conn:
             cur = conn.cursor()
-            cur.execute("SELECT id, metadata, tags, desc FROM bookmarks WHERE URL = ?", (url,))
+            cur.execute(
+                "SELECT id, metadata, tags, desc FROM bookmarks WHERE URL = ? OR URL = ? OR URL = ? LIMIT 1",
+                (url, url.rstrip("/"), url.rstrip("/") + "/")
+            )
             existing = cur.fetchone()
             if existing:
                 curr_tags = parse_tags_string(existing["tags"])
