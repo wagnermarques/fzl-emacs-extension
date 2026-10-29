@@ -18,7 +18,7 @@ async function getSettings() {
     browserAPI.storage.local.get(
       {
         commMode: "auto", // "auto", "native", "http"
-        dbPath: "/home/wgn/mnt/ext4/Projects-Srcs/Projects-Srcs-Desktop/fzl-emacs/bookmarks/bookmarks.db",
+        dbPath: "/home/wgn/WORKING/Projects-Srcs/Projects-Srcs-Desktop/fzl-emacs/bookmarks/bookmarks.db",
         bukuBin: "/home/wgn/.local/bin/buku",
         emacsclientBin: "/home/wgn/WORKING/Progsativos/ides/emacs/bin/emacsclient",
         defaultTag: "general",

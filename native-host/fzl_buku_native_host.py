@@ -15,8 +15,24 @@ import shutil
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
 
+def get_default_repo_db() -> str:
+    script_dir = Path(__file__).resolve().parent
+    # 1. Inside fzl-emacs submodule: <fzl-emacs>/gitsubmodules/fzl-emacs-extension/native-host
+    cand1 = script_dir.parents[1] / "bookmarks" / "bookmarks.db"
+    if cand1.is_file():
+        return str(cand1)
+    # 2. Inside peer repo: <desktop>/fzl-emacs/bookmarks/bookmarks.db
+    cand2 = script_dir.parents[1] / "fzl-emacs" / "bookmarks" / "bookmarks.db"
+    if cand2.is_file():
+        return str(cand2)
+    # 3. Known working directory
+    cand3 = Path.home() / "WORKING/Projects-Srcs/Projects-Srcs-Desktop/fzl-emacs/bookmarks/bookmarks.db"
+    if cand3.is_file():
+        return str(cand3)
+    return str(cand1)
+
 # Default locations
-DEFAULT_EMACS_REPO_DB = "/home/wgn/mnt/ext4/Projects-Srcs/Projects-Srcs-Desktop/fzl-emacs/bookmarks/bookmarks.db"
+DEFAULT_EMACS_REPO_DB = get_default_repo_db()
 DEFAULT_BUKU_CLI = "/home/wgn/.local/bin/buku"
 DEFAULT_EMACSCLIENT = "/home/wgn/WORKING/Progsativos/ides/emacs/bin/emacsclient"
 CONFIG_FILE = os.path.expanduser("~/.config/fzl-emacs-buku/config.json")
@@ -41,19 +57,23 @@ def load_user_config() -> Dict[str, Any]:
 
 def resolve_db_path(custom_path: Optional[str] = None) -> str:
     cfg = load_user_config()
+    repo_default = get_default_repo_db()
     candidates = [
         custom_path,
         cfg.get("db_path"),
         os.environ.get("BUKU_DB_PATH"),
-        "/run/media/wgn/ext4/Projects-Srcs/Projects-Srcs-Desktop/fzl-emacs/bookmarks/bookmarks.db",
+        repo_default,
         DEFAULT_EMACS_REPO_DB,
+        os.path.expanduser("~/WORKING/Projects-Srcs/Projects-Srcs-Desktop/fzl-emacs/bookmarks/bookmarks.db"),
+        "/run/media/wgn/ext4/Projects-Srcs/Projects-Srcs-Desktop/fzl-emacs/bookmarks/bookmarks.db",
+        "/home/wgn/mnt/ext4/Projects-Srcs/Projects-Srcs-Desktop/fzl-emacs/bookmarks/bookmarks.db",
         os.path.expanduser("~/.local/share/buku/bookmarks.db"),
     ]
     for c in candidates:
         if c and os.path.isfile(c):
             return os.path.abspath(c)
     # Fallback to default emacs repo path even if not yet created
-    return custom_path or cfg.get("db_path") or DEFAULT_EMACS_REPO_DB
+    return repo_default or custom_path or cfg.get("db_path") or DEFAULT_EMACS_REPO_DB
 
 def resolve_buku_bin(custom_path: Optional[str] = None) -> str:
     cfg = load_user_config()

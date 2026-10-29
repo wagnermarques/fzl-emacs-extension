@@ -5,7 +5,7 @@
 
 const browserAPI = globalThis.browser || globalThis.chrome;
 
-const DEFAULT_DB_PATH = "/home/wgn/mnt/ext4/Projects-Srcs/Projects-Srcs-Desktop/fzl-emacs/bookmarks/bookmarks.db";
+const DEFAULT_DB_PATH = "/home/wgn/WORKING/Projects-Srcs/Projects-Srcs-Desktop/fzl-emacs/bookmarks/bookmarks.db";
 const DEFAULT_BUKU_BIN = "/home/wgn/.local/bin/buku";
 const DEFAULT_EMACSCLIENT_BIN = "/home/wgn/WORKING/Progsativos/ides/emacs/bin/emacsclient";
 
