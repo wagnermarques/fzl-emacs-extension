@@ -21,6 +21,11 @@ const footerStatus = document.getElementById("footerStatus");
 const bookmarkTotalBadge = document.getElementById("bookmarkTotalBadge");
 const emacsStatusBadge = document.getElementById("emacsStatusBadge");
 const btnSettings = document.getElementById("btnSettings");
+const btnSidePanel = document.getElementById("btnSidePanel");
+const btnPopout = document.getElementById("btnPopout");
+const resizeHandle = document.getElementById("resizeHandle");
+const resizeBarBottom = document.getElementById("resizeBarBottom");
+const btnToggleFullHeight = document.getElementById("btnToggleFullHeight");
 const linkReload = document.getElementById("linkReload");
 
 // Tab 1 Elements
@@ -151,7 +156,208 @@ function setupTabNavigation() {
 // Initialization & Status
 // -----------------------------------------------------------------------------
 
+function initWindowAndResize() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const isWindow = urlParams.get("mode") === "window";
+  const isSidepanel = urlParams.get("mode") === "sidepanel" || (window.innerWidth <= 550 && window.innerHeight > 650);
+
+  if (isWindow) {
+    document.body.classList.add("is-window");
+  } else if (isSidepanel) {
+    document.body.classList.add("is-sidepanel");
+  } else {
+    // Load saved dimensions for popup mode (clamped safely to 600px max in standard dropdown popup to prevent internal scrollbars)
+    browserAPI.storage.local.get({ popupWidth: 460, popupHeight: 560 }, (items) => {
+      if (items.popupWidth && items.popupHeight) {
+        applyPopupSize(items.popupWidth, items.popupHeight);
+      }
+    });
+    setupResizeHandle();
+    setupVerticalResizeBar();
+    setupFullHeightToggle();
+  }
+
+  setupPopout();
+  setupSidePanel();
+}
+
+function applyPopupSize(width, height) {
+  // In Chromium dropdown popups, the browser engine physically caps the popup bubble at 600px.
+  // Exceeding 600px in a popup bubble doesn't grow the window; it causes the browser to add a scrollbar.
+  // In Firefox, popup bubbles can grow up to ~800px.
+  const isChromium = !navigator.userAgent.includes("Firefox");
+  const maxPopupHeight = isChromium ? 600 : Math.min(800, window.screen?.availHeight ? Math.round(window.screen.availHeight * 0.9) : 800);
+
+  const w = Math.min(800, Math.max(380, Math.round(width)));
+  const h = Math.min(maxPopupHeight, Math.max(350, Math.round(height)));
+  document.body.style.width = `${w}px`;
+  document.body.style.height = `${h}px`;
+
+  // Update button label if near maximum popup bubble height
+  if (btnToggleFullHeight) {
+    if (h >= maxPopupHeight - 10) {
+      btnToggleFullHeight.textContent = "↕ Standard Height";
+    } else {
+      btnToggleFullHeight.textContent = `↕ Max Height (${maxPopupHeight}px)`;
+    }
+  }
+}
+
+function setupResizeHandle() {
+  if (!resizeHandle) return;
+
+  let isResizing = false;
+  let startX = 0;
+  let startY = 0;
+  let startWidth = 0;
+  let startHeight = 0;
+
+  resizeHandle.addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    isResizing = true;
+    startX = e.clientX;
+    startY = e.clientY;
+    const rect = document.body.getBoundingClientRect();
+    startWidth = rect.width;
+    startHeight = rect.height;
+    document.body.style.userSelect = "none";
+
+    const onMouseMove = (moveEvent) => {
+      if (!isResizing) return;
+      const deltaX = moveEvent.clientX - startX;
+      const deltaY = moveEvent.clientY - startY;
+      applyPopupSize(startWidth + deltaX, startHeight + deltaY);
+    };
+
+    const onMouseUp = () => {
+      if (!isResizing) return;
+      isResizing = false;
+      document.body.style.userSelect = "";
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+
+      const finalRect = document.body.getBoundingClientRect();
+      browserAPI.storage.local.set({
+        popupWidth: Math.round(finalRect.width),
+        popupHeight: Math.round(finalRect.height),
+      });
+    };
+
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+  });
+}
+
+function setupVerticalResizeBar() {
+  if (!resizeBarBottom) return;
+
+  let isResizing = false;
+  let startY = 0;
+  let startHeight = 0;
+
+  resizeBarBottom.addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    isResizing = true;
+    startY = e.clientY;
+    startHeight = document.body.getBoundingClientRect().height;
+    document.body.style.userSelect = "none";
+
+    const onMouseMove = (moveEvent) => {
+      if (!isResizing) return;
+      const deltaY = moveEvent.clientY - startY;
+      const newHeight = startHeight + deltaY;
+      applyPopupSize(document.body.getBoundingClientRect().width, newHeight);
+    };
+
+    const onMouseUp = () => {
+      if (!isResizing) return;
+      isResizing = false;
+      document.body.style.userSelect = "";
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+
+      const finalRect = document.body.getBoundingClientRect();
+      browserAPI.storage.local.set({
+        popupHeight: Math.round(finalRect.height),
+      });
+    };
+
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+  });
+}
+
+function setupFullHeightToggle() {
+  if (!btnToggleFullHeight) return;
+
+  btnToggleFullHeight.addEventListener("click", (e) => {
+    e.preventDefault();
+    const isChromium = !navigator.userAgent.includes("Firefox");
+    const maxPopupHeight = isChromium ? 600 : 800;
+    const currentHeight = document.body.getBoundingClientRect().height;
+
+    if (currentHeight >= maxPopupHeight - 15) {
+      applyPopupSize(document.body.getBoundingClientRect().width, 540);
+      browserAPI.storage.local.set({ popupHeight: 540 });
+    } else {
+      applyPopupSize(document.body.getBoundingClientRect().width, maxPopupHeight);
+      browserAPI.storage.local.set({ popupHeight: maxPopupHeight });
+    }
+  });
+}
+
+function setupPopout() {
+  if (!btnPopout) return;
+  btnPopout.addEventListener("click", () => {
+    const popoutUrl = browserAPI.runtime.getURL("popup/popup.html?mode=window");
+    if (browserAPI.windows && browserAPI.windows.create) {
+      browserAPI.windows.create({
+        url: popoutUrl,
+        type: "popup",
+        width: 720,
+        height: 750,
+        focused: true,
+      });
+      window.close();
+    } else {
+      browserAPI.tabs.create({ url: popoutUrl });
+      window.close();
+    }
+  });
+}
+
+function setupSidePanel() {
+  if (!btnSidePanel) return;
+
+  btnSidePanel.addEventListener("click", async () => {
+    try {
+      if (browserAPI.sidePanel && browserAPI.sidePanel.open) {
+        const tabs = await new Promise((res) => {
+          browserAPI.tabs.query({ active: true, currentWindow: true }, (r) => res(r || []));
+        });
+        const currentWindowId = tabs[0]?.windowId;
+        if (currentWindowId) {
+          await browserAPI.sidePanel.open({ windowId: currentWindowId });
+          window.close();
+          return;
+        }
+      }
+      if (browserAPI.sidebarAction && browserAPI.sidebarAction.open) {
+        await browserAPI.sidebarAction.open();
+        window.close();
+        return;
+      }
+    } catch (e) {
+      console.warn("Direct side panel open error:", e);
+    }
+
+    // Fallback if browser doesn't permit direct script opening of sidepanel: open floating window
+    btnPopout?.click();
+  });
+}
+
 async function init() {
+  initWindowAndResize();
   setupTabNavigation();
   setupEventListeners();
 

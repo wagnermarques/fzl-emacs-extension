@@ -22,6 +22,8 @@
           <span class="status-dot"></span>
           <span class="status-label">Emacs</span>
         </div>
+        <button id="btnSidePanel" class="icon-btn" title="Open in Browser Side Panel (Full Vertical Height)">◨</button>
+        <button id="btnPopout" class="icon-btn" title="Open in standalone floating window (freely resizable)">⤢</button>
         <button id="btnSettings" class="icon-btn" title="Settings & Preferences">⚙️</button>
       </div>
     </header>
@@ -318,9 +320,16 @@
         ● Connecting to Buku...
       </div>
       <div class="footer-links">
+        <button type="button" id="btnToggleFullHeight" class="text-link-btn" title="Toggle maximum vertical screen height">↕ Max Height</button>
         <a href="#" id="linkReload" title="Reload bookmarks">↻ Sync</a>
       </div>
     </footer>
+
+    <!-- Bottom edge vertical resize handle (drag anywhere along bottom to resize height) -->
+    <div id="resizeBarBottom" class="resize-bar-bottom" title="Drag vertically to resize height freely"></div>
+
+    <!-- Draggable corner resize handle for popup mode -->
+    <div id="resizeHandle" class="resize-handle" title="Drag to resize width and height freely"></div>
   </div>
 
   <script src="popup.js"></script>

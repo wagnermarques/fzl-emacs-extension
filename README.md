@@ -55,6 +55,10 @@ Esta extensão conecta seus navegadores favoritos diretamente à base de favorit
    - **Native Messaging Host (Padrão / Recomendado):** Comunicação stdio local direta via Python, sem portas abertas ou daemons em segundo plano.
    - **Local HTTP Bridge (Fallback Opcional):** Servidor REST local em `http://127.0.0.1:8765` caso você prefira rodar um serviço em background.
 
+8. 📐 **Tela Redimensionável e Janela Destacada (Resizable & Pop-out Window):**
+   - **Alça de Redimensionamento no Canto Inferior Direito:** Arraste o canto inferior direito do popup para ajustar largura e altura (até o limite de 800x600 px permitido pelos navegadores). A extensão memoriza suas dimensões preferidas automaticamente.
+   - **Janela Destacada (Botão ⤢ Pop-out):** Clique no botão `⤢` no cabeçalho para abrir a extensão em uma janela nativa independente do sistema operacional, sem limite de tamanho (tela cheia, monitor secundário ou lado a lado com o Emacs) e sem fechar ao clicar fora.
+
 ---
 
 ## 📂 Estrutura do Projeto

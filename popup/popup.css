@@ -54,9 +54,12 @@ body.theme-light {
 }
 
 body {
-  width: 440px;
-  max-height: 590px;
-  min-height: 480px;
+  width: var(--popup-width, 450px);
+  height: var(--popup-height, 560px);
+  min-width: 380px;
+  max-width: 800px;
+  min-height: 350px;
+  max-height: none;
   background-color: var(--bg-primary);
   color: var(--text-primary);
   font-family: var(--font-sans);
@@ -64,13 +67,115 @@ body {
   line-height: 1.4;
   overflow: hidden;
   user-select: none;
+  position: relative;
+}
+
+body.is-window,
+body.is-sidepanel {
+  width: 100vw !important;
+  height: 100vh !important;
+  min-width: 320px !important;
+  min-height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
 }
 
 .app-container {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  max-height: 590px;
+  max-height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+
+body.is-window .resize-handle,
+body.is-window .resize-bar-bottom,
+body.is-window #btnToggleFullHeight,
+body.is-window #btnPopout,
+body.is-sidepanel .resize-handle,
+body.is-sidepanel .resize-bar-bottom,
+body.is-sidepanel #btnToggleFullHeight,
+body.is-sidepanel #btnSidePanel {
+  display: none !important;
+}
+
+/* Bottom Edge Vertical Resize Bar (drag height freely) */
+.resize-bar-bottom {
+  position: fixed;
+  left: 0;
+  right: 18px;
+  bottom: 0;
+  height: 7px;
+  cursor: ns-resize;
+  z-index: 9999;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+
+.resize-bar-bottom::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 2px;
+  transform: translateX(-50%);
+  width: 36px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--border-color);
+  opacity: 0.6;
+  transition: all 0.15s ease;
+}
+
+.resize-bar-bottom:hover {
+  background: var(--primary-light);
+}
+
+.resize-bar-bottom:hover::after {
+  background: var(--accent);
+  opacity: 1;
+  width: 48px;
+}
+
+/* Draggable Resize Corner Handle */
+.resize-handle {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  width: 18px;
+  height: 18px;
+  cursor: nwse-resize;
+  z-index: 10000;
+  background:
+    linear-gradient(135deg, transparent 0%, transparent 40%, var(--border-color) 40%, var(--border-color) 50%, transparent 50%, transparent 65%, var(--border-color) 65%, var(--border-color) 75%, transparent 75%, transparent 90%, var(--border-color) 90%);
+  opacity: 0.5;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.resize-handle:hover {
+  opacity: 1;
+  background:
+    linear-gradient(135deg, transparent 0%, transparent 40%, var(--accent) 40%, var(--accent) 50%, transparent 50%, transparent 65%, var(--accent) 65%, var(--accent) 75%, transparent 75%, transparent 90%, var(--accent) 90%);
+}
+
+.text-link-btn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 11px;
+  font-family: inherit;
+  padding: 0 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.text-link-btn:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
 }
 
 /* Header */
