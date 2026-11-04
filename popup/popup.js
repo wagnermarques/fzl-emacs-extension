@@ -11,6 +11,9 @@ let allTags = [];
 let currentFilterTag = "all";
 let currentTabInfo = null;
 let systemStatus = null;
+let groupsSortMode = "alpha"; // "alpha" or "count"
+let currentSelectedGroup = null;
+let currentGroupBookmarks = [];
 
 // DOM Elements
 const toastBar = document.getElementById("toastBar");
@@ -43,6 +46,29 @@ const openAllBar = document.getElementById("openAllBar");
 const openAllCountText = document.getElementById("openAllCountText");
 const btnOpenAllInTag = document.getElementById("btnOpenAllInTag");
 const bookmarksList = document.getElementById("bookmarksList");
+
+// Tab Groups Elements
+const groupsTotalBadge = document.getElementById("groupsTotalBadge");
+const groupsListView = document.getElementById("groupsListView");
+const groupFilterInput = document.getElementById("groupFilterInput");
+const btnClearGroupFilter = document.getElementById("btnClearGroupFilter");
+const groupsCountSummary = document.getElementById("groupsCountSummary");
+const btnSortAlpha = document.getElementById("btnSortAlpha");
+const btnSortCount = document.getElementById("btnSortCount");
+const alphabetJumpBar = document.getElementById("alphabetJumpBar");
+const groupsAlphabeticalList = document.getElementById("groupsAlphabeticalList");
+
+// Group Detail Elements
+const groupDetailView = document.getElementById("groupDetailView");
+const btnBackToGroups = document.getElementById("btnBackToGroups");
+const groupDetailSelect = document.getElementById("groupDetailSelect");
+const groupDetailTitle = document.getElementById("groupDetailTitle");
+const groupDetailCountBadge = document.getElementById("groupDetailCountBadge");
+const btnOpenAllGroupUrls = document.getElementById("btnOpenAllGroupUrls");
+const btnCopyAllGroupUrls = document.getElementById("btnCopyAllGroupUrls");
+const groupUrlsSearchBox = document.getElementById("groupUrlsSearchBox");
+const btnClearGroupUrlsSearch = document.getElementById("btnClearGroupUrlsSearch");
+const groupBookmarksList = document.getElementById("groupBookmarksList");
 
 // Tab 3 Elements
 const tabsList = document.getElementById("tabsList");
@@ -112,6 +138,10 @@ function setupTabNavigation() {
         loadWindowTabs();
       } else if (targetId === "tabSearch") {
         setTimeout(() => searchBox.focus(), 100);
+      } else if (targetId === "tabGroups") {
+        if (!currentSelectedGroup) {
+          renderGroupsList();
+        }
       }
     });
   });
@@ -267,8 +297,13 @@ async function loadTags() {
     const res = await sendToBackend("get_tags");
     if (res && res.tags) {
       allTags = res.tags;
+      if (groupsTotalBadge) {
+        groupsTotalBadge.textContent = allTags.length;
+      }
       renderQuickTags(allTags);
       renderTagsCarousel(allTags);
+      renderGroupsList();
+      populateGroupDetailSelect();
     }
   } catch (e) {
     console.warn("Failed to load tags:", e);
@@ -410,6 +445,119 @@ function updateOpenAllBar() {
   }
 }
 
+function createBookmarkCard(bm, { onTagClick } = {}) {
+  const card = document.createElement("div");
+  card.className = "bookmark-card";
+
+  // Card Header
+  const header = document.createElement("div");
+  header.className = "bm-header";
+
+  const titleLink = document.createElement("a");
+  titleLink.className = "bm-title-link";
+  titleLink.textContent = bm.title || bm.url;
+  titleLink.href = bm.url;
+  titleLink.title = bm.url;
+  titleLink.addEventListener("click", (e) => {
+    e.preventDefault();
+    browserAPI.tabs.create({ url: bm.url, active: !e.shiftKey });
+  });
+
+  const indexBadge = document.createElement("span");
+  indexBadge.className = "bm-index";
+  indexBadge.textContent = `#${bm.id}`;
+
+  header.appendChild(titleLink);
+  header.appendChild(indexBadge);
+  card.appendChild(header);
+
+  // URL link
+  const urlElem = document.createElement("a");
+  urlElem.className = "bm-url truncate";
+  urlElem.textContent = bm.url;
+  urlElem.href = bm.url;
+  urlElem.addEventListener("click", (e) => {
+    e.preventDefault();
+    browserAPI.tabs.create({ url: bm.url });
+  });
+  card.appendChild(urlElem);
+
+  // Tags
+  if (bm.tags && bm.tags.length > 0) {
+    const tagsRow = document.createElement("div");
+    tagsRow.className = "bm-tags-row";
+    bm.tags.forEach((tg) => {
+      const badge = document.createElement("span");
+      badge.className = "bm-tag-badge";
+      badge.textContent = tg;
+      badge.title = `Filter by group: ${tg}`;
+      badge.addEventListener("click", () => {
+        if (onTagClick) {
+          onTagClick(tg);
+        } else {
+          setTagFilter(tg);
+        }
+      });
+      tagsRow.appendChild(badge);
+    });
+    card.appendChild(tagsRow);
+  }
+
+  // Description / Comment
+  if (bm.description) {
+    const desc = document.createElement("div");
+    desc.className = "bm-desc truncate";
+    desc.textContent = bm.description;
+    desc.title = bm.description;
+    card.appendChild(desc);
+  }
+
+  // Action buttons bar
+  const actions = document.createElement("div");
+  actions.className = "bm-actions";
+
+  // 1. Open current tab
+  const btnOpenCurrent = document.createElement("button");
+  btnOpenCurrent.className = "bm-btn";
+  btnOpenCurrent.innerHTML = "⧉ Here";
+  btnOpenCurrent.title = "Open in current tab";
+  btnOpenCurrent.addEventListener("click", () => {
+    browserAPI.tabs.update({ url: bm.url });
+  });
+
+  // 2. Copy URL
+  const btnCopy = document.createElement("button");
+  btnCopy.className = "bm-btn";
+  btnCopy.innerHTML = "📋 Copy";
+  btnCopy.title = "Copy URL to clipboard";
+  btnCopy.addEventListener("click", () => {
+    navigator.clipboard.writeText(bm.url);
+    showToast("Copied to clipboard!", "info", 2000);
+  });
+
+  // 3. Edit tags
+  const btnEdit = document.createElement("button");
+  btnEdit.className = "bm-btn";
+  btnEdit.innerHTML = "✏️ Edit";
+  btnEdit.title = "Edit tags or description";
+  btnEdit.addEventListener("click", () => promptEditBookmark(bm));
+
+  // 4. Delete
+  const btnDelete = document.createElement("button");
+  btnDelete.className = "bm-btn delete";
+  btnDelete.innerHTML = "🗑️ Delete";
+  btnDelete.title = "Delete bookmark from Buku";
+  btnDelete.addEventListener("click", () => confirmDeleteBookmark(bm));
+
+  actions.appendChild(btnOpenCurrent);
+  actions.appendChild(btnCopy);
+  actions.appendChild(btnEdit);
+  actions.appendChild(btnDelete);
+  card.appendChild(actions);
+
+  return card;
+}
+
 function renderBookmarksList(bookmarks) {
   if (!bookmarks || bookmarks.length === 0) {
     bookmarksList.innerHTML = `<div class="empty-state">No bookmarks found.</div>`;
@@ -418,109 +566,7 @@ function renderBookmarksList(bookmarks) {
 
   bookmarksList.innerHTML = "";
   bookmarks.forEach((bm) => {
-    const card = document.createElement("div");
-    card.className = "bookmark-card";
-
-    // Card Header
-    const header = document.createElement("div");
-    header.className = "bm-header";
-
-    const titleLink = document.createElement("a");
-    titleLink.className = "bm-title-link";
-    titleLink.textContent = bm.title || bm.url;
-    titleLink.href = bm.url;
-    titleLink.title = bm.url;
-    titleLink.addEventListener("click", (e) => {
-      e.preventDefault();
-      browserAPI.tabs.create({ url: bm.url, active: !e.shiftKey });
-    });
-
-    const indexBadge = document.createElement("span");
-    indexBadge.className = "bm-index";
-    indexBadge.textContent = `#${bm.id}`;
-
-    header.appendChild(titleLink);
-    header.appendChild(indexBadge);
-    card.appendChild(header);
-
-    // URL link
-    const urlElem = document.createElement("a");
-    urlElem.className = "bm-url truncate";
-    urlElem.textContent = bm.url;
-    urlElem.href = bm.url;
-    urlElem.addEventListener("click", (e) => {
-      e.preventDefault();
-      browserAPI.tabs.create({ url: bm.url });
-    });
-    card.appendChild(urlElem);
-
-    // Tags
-    if (bm.tags && bm.tags.length > 0) {
-      const tagsRow = document.createElement("div");
-      tagsRow.className = "bm-tags-row";
-      bm.tags.forEach((tg) => {
-        const badge = document.createElement("span");
-        badge.className = "bm-tag-badge";
-        badge.textContent = tg;
-        badge.title = `Filter by tag: ${tg}`;
-        badge.addEventListener("click", () => setTagFilter(tg));
-        tagsRow.appendChild(badge);
-      });
-      card.appendChild(tagsRow);
-    }
-
-    // Description / Comment
-    if (bm.description) {
-      const desc = document.createElement("div");
-      desc.className = "bm-desc truncate";
-      desc.textContent = bm.description;
-      desc.title = bm.description;
-      card.appendChild(desc);
-    }
-
-    // Action buttons bar
-    const actions = document.createElement("div");
-    actions.className = "bm-actions";
-
-    // 1. Open current tab
-    const btnOpenCurrent = document.createElement("button");
-    btnOpenCurrent.className = "bm-btn";
-    btnOpenCurrent.innerHTML = "⧉ Here";
-    btnOpenCurrent.title = "Open in current tab";
-    btnOpenCurrent.addEventListener("click", () => {
-      browserAPI.tabs.update({ url: bm.url });
-    });
-
-    // 2. Copy URL
-    const btnCopy = document.createElement("button");
-    btnCopy.className = "bm-btn";
-    btnCopy.innerHTML = "📋 Copy";
-    btnCopy.title = "Copy URL to clipboard";
-    btnCopy.addEventListener("click", () => {
-      navigator.clipboard.writeText(bm.url);
-      showToast("Copied to clipboard!", "info", 2000);
-    });
-
-    // 3. Edit tags
-    const btnEdit = document.createElement("button");
-    btnEdit.className = "bm-btn";
-    btnEdit.innerHTML = "✏️ Edit";
-    btnEdit.title = "Edit tags or description";
-    btnEdit.addEventListener("click", () => promptEditBookmark(bm));
-
-    // 4. Delete
-    const btnDelete = document.createElement("button");
-    btnDelete.className = "bm-btn delete";
-    btnDelete.innerHTML = "🗑️ Delete";
-    btnDelete.title = "Delete bookmark from Buku";
-    btnDelete.addEventListener("click", () => confirmDeleteBookmark(bm));
-
-    actions.appendChild(btnOpenCurrent);
-    actions.appendChild(btnCopy);
-    actions.appendChild(btnEdit);
-    actions.appendChild(btnDelete);
-    card.appendChild(actions);
-
+    const card = createBookmarkCard(bm);
     bookmarksList.appendChild(card);
   });
 }
@@ -537,6 +583,9 @@ function promptEditBookmark(bm) {
       showToast(`Updated tags for #${bm.id}`, "success");
       loadBookmarks(searchBox.value.trim());
       loadTags();
+      if (currentSelectedGroup) {
+        loadGroupBookmarks(currentSelectedGroup);
+      }
     })
     .catch((err) => showToast("Update failed: " + err.message, "error"));
 }
@@ -549,9 +598,253 @@ function confirmDeleteBookmark(bm) {
         loadBookmarks(searchBox.value.trim());
         loadTags();
         refreshStatus();
+        if (currentSelectedGroup) {
+          loadGroupBookmarks(currentSelectedGroup);
+        }
       })
       .catch((err) => showToast("Delete failed: " + err.message, "error"));
   }
+}
+
+// -----------------------------------------------------------------------------
+// Tab Groups & Group Bookmarks
+// -----------------------------------------------------------------------------
+
+function renderGroupsList() {
+  if (!groupsAlphabeticalList) return;
+
+  if (!allTags || allTags.length === 0) {
+    groupsAlphabeticalList.innerHTML = `<div class="empty-state">No groups found in Buku database.</div>`;
+    if (groupsCountSummary) groupsCountSummary.textContent = "0 groups";
+    if (alphabetJumpBar) alphabetJumpBar.innerHTML = "";
+    return;
+  }
+
+  // 1. Sort tags
+  let sorted = allTags.slice();
+  if (groupsSortMode === "alpha") {
+    sorted.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+  } else {
+    sorted.sort((a, b) => {
+      if (b.count !== a.count) return b.count - a.count;
+      return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+    });
+  }
+
+  // 2. Filter by search input
+  const q = groupFilterInput ? groupFilterInput.value.trim().toLowerCase() : "";
+  if (q) {
+    sorted = sorted.filter((t) => t.name.toLowerCase().includes(q));
+  }
+
+  if (groupsCountSummary) {
+    groupsCountSummary.textContent = `${sorted.length} of ${allTags.length} group${allTags.length === 1 ? "" : "s"}`;
+  }
+
+  if (sorted.length === 0) {
+    groupsAlphabeticalList.innerHTML = `<div class="empty-state">No groups match "${q}".</div>`;
+    if (alphabetJumpBar) alphabetJumpBar.innerHTML = "";
+    return;
+  }
+
+  groupsAlphabeticalList.innerHTML = "";
+  if (alphabetJumpBar) alphabetJumpBar.innerHTML = "";
+
+  if (groupsSortMode === "alpha") {
+    // Group into alphabetical sections
+    const letterMap = new Map();
+    sorted.forEach((t) => {
+      const firstChar = t.name.charAt(0).toUpperCase();
+      const letter = /[A-Z]/.test(firstChar) ? firstChar : "#";
+      if (!letterMap.has(letter)) {
+        letterMap.set(letter, []);
+      }
+      letterMap.get(letter).push(t);
+    });
+
+    // Populate alphabet jump bar
+    letterMap.forEach((_, letter) => {
+      const pill = document.createElement("button");
+      pill.type = "button";
+      pill.className = "jump-pill";
+      pill.textContent = letter;
+      pill.title = `Jump to ${letter}`;
+      pill.addEventListener("click", () => {
+        const target = document.getElementById(`letter-sec-${letter}`);
+        if (target) {
+          target.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      });
+      alphabetJumpBar.appendChild(pill);
+    });
+
+    // Render each letter section
+    letterMap.forEach((items, letter) => {
+      const sec = document.createElement("div");
+      sec.className = "letter-section";
+      sec.id = `letter-sec-${letter}`;
+
+      const secHeader = document.createElement("div");
+      secHeader.className = "letter-header";
+      secHeader.textContent = letter;
+      sec.appendChild(secHeader);
+
+      const itemsList = document.createElement("div");
+      itemsList.className = "letter-items-list";
+
+      items.forEach((item) => {
+        const row = createGroupRow(item);
+        itemsList.appendChild(row);
+      });
+
+      sec.appendChild(itemsList);
+      groupsAlphabeticalList.appendChild(sec);
+    });
+  } else {
+    // Count mode: straightforward list
+    const itemsList = document.createElement("div");
+    itemsList.className = "letter-items-list";
+    sorted.forEach((item) => {
+      const row = createGroupRow(item);
+      itemsList.appendChild(row);
+    });
+    groupsAlphabeticalList.appendChild(itemsList);
+  }
+}
+
+function createGroupRow(item) {
+  const row = document.createElement("div");
+  row.className = "group-row";
+  row.setAttribute("role", "button");
+  row.tabIndex = 0;
+  row.title = `Click to view URLs in group '${item.name}'`;
+
+  const left = document.createElement("div");
+  left.className = "group-row-main";
+
+  const icon = document.createElement("span");
+  icon.className = "group-row-icon";
+  icon.textContent = "🏷️";
+
+  const name = document.createElement("span");
+  name.className = "group-row-name";
+  name.textContent = item.name;
+
+  left.appendChild(icon);
+  left.appendChild(name);
+
+  const right = document.createElement("div");
+  right.className = "group-row-meta";
+
+  const badge = document.createElement("span");
+  badge.className = "group-badge";
+  badge.textContent = `${item.count} URL${item.count === 1 ? "" : "s"}`;
+
+  const arrow = document.createElement("span");
+  arrow.className = "group-row-arrow";
+  arrow.textContent = "›";
+
+  right.appendChild(badge);
+  right.appendChild(arrow);
+
+  row.appendChild(left);
+  row.appendChild(right);
+
+  const onSelect = () => selectGroup(item.name);
+  row.addEventListener("click", onSelect);
+  row.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onSelect();
+    }
+  });
+
+  return row;
+}
+
+function populateGroupDetailSelect() {
+  if (!groupDetailSelect) return;
+  groupDetailSelect.innerHTML = "";
+
+  const sorted = allTags.slice().sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+  sorted.forEach((t) => {
+    const opt = document.createElement("option");
+    opt.value = t.name;
+    opt.textContent = `${t.name} (${t.count})`;
+    groupDetailSelect.appendChild(opt);
+  });
+
+  if (currentSelectedGroup) {
+    groupDetailSelect.value = currentSelectedGroup;
+  }
+}
+
+async function selectGroup(groupName) {
+  if (!groupName) return;
+  currentSelectedGroup = groupName;
+
+  if (groupsListView) groupsListView.classList.add("hidden");
+  if (groupDetailView) groupDetailView.classList.remove("hidden");
+
+  if (groupDetailTitle) groupDetailTitle.textContent = groupName;
+  if (groupDetailSelect) groupDetailSelect.value = groupName;
+  if (groupUrlsSearchBox) groupUrlsSearchBox.value = "";
+  if (btnClearGroupUrlsSearch) btnClearGroupUrlsSearch.classList.add("hidden");
+
+  await loadGroupBookmarks(groupName);
+}
+
+async function loadGroupBookmarks(groupName) {
+  if (!groupBookmarksList) return;
+  groupBookmarksList.innerHTML = `<div class="empty-state">Loading bookmarks in '${groupName}'...</div>`;
+
+  try {
+    const res = await sendToBackend("get_bookmarks", {
+      tag: groupName,
+      limit: 1000,
+    });
+    if (res && res.bookmarks) {
+      currentGroupBookmarks = res.bookmarks;
+    } else {
+      currentGroupBookmarks = [];
+    }
+    renderGroupBookmarks(currentGroupBookmarks);
+  } catch (err) {
+    groupBookmarksList.innerHTML = `<div class="empty-state">Error loading bookmarks: ${err.message}</div>`;
+  }
+}
+
+function renderGroupBookmarks(bookmarks) {
+  if (!groupBookmarksList) return;
+
+  if (groupDetailCountBadge) {
+    groupDetailCountBadge.textContent = `${bookmarks.length} URL${bookmarks.length === 1 ? "" : "s"}`;
+  }
+
+  const query = groupUrlsSearchBox ? groupUrlsSearchBox.value.trim().toLowerCase() : "";
+  let displayed = bookmarks;
+  if (query) {
+    const terms = query.split(/\s+/);
+    displayed = bookmarks.filter((bm) => {
+      const searchStr = `${bm.title || ""} ${bm.url || ""} ${bm.description || ""} ${(bm.tags || []).join(" ")}`.toLowerCase();
+      return terms.every((t) => searchStr.includes(t));
+    });
+  }
+
+  if (!displayed || displayed.length === 0) {
+    groupBookmarksList.innerHTML = `<div class="empty-state">${query ? `No matching bookmarks in '${currentSelectedGroup}'.` : `No bookmarks found in group '${currentSelectedGroup}'.`}</div>`;
+    return;
+  }
+
+  groupBookmarksList.innerHTML = "";
+  displayed.forEach((bm) => {
+    const card = createBookmarkCard(bm, {
+      onTagClick: (newTag) => {
+        selectGroup(newTag);
+      },
+    });
+    groupBookmarksList.appendChild(card);
+  });
 }
 
 // Open all in tag
@@ -770,7 +1063,120 @@ function setupEventListeners() {
     await refreshStatus();
     await loadBookmarks(searchBox.value.trim());
     await loadTags();
+    if (currentSelectedGroup) {
+      await loadGroupBookmarks(currentSelectedGroup);
+    }
   });
+
+  // Tab Groups: Sort toggle
+  if (btnSortAlpha && btnSortCount) {
+    btnSortAlpha.addEventListener("click", () => {
+      groupsSortMode = "alpha";
+      btnSortAlpha.classList.add("active");
+      btnSortCount.classList.remove("active");
+      renderGroupsList();
+    });
+
+    btnSortCount.addEventListener("click", () => {
+      groupsSortMode = "count";
+      btnSortCount.classList.add("active");
+      btnSortAlpha.classList.remove("active");
+      renderGroupsList();
+    });
+  }
+
+  // Tab Groups: Filter groups input
+  if (groupFilterInput && btnClearGroupFilter) {
+    let groupFilterTimeout = null;
+    groupFilterInput.addEventListener("input", () => {
+      const q = groupFilterInput.value.trim();
+      if (q) {
+        btnClearGroupFilter.classList.remove("hidden");
+      } else {
+        btnClearGroupFilter.classList.add("hidden");
+      }
+      clearTimeout(groupFilterTimeout);
+      groupFilterTimeout = setTimeout(renderGroupsList, 150);
+    });
+
+    btnClearGroupFilter.addEventListener("click", () => {
+      groupFilterInput.value = "";
+      btnClearGroupFilter.classList.add("hidden");
+      renderGroupsList();
+      groupFilterInput.focus();
+    });
+  }
+
+  // Tab Groups: Back button
+  if (btnBackToGroups) {
+    btnBackToGroups.addEventListener("click", () => {
+      if (groupDetailView) groupDetailView.classList.add("hidden");
+      if (groupsListView) groupsListView.classList.remove("hidden");
+      currentSelectedGroup = null;
+      renderGroupsList();
+    });
+  }
+
+  // Tab Groups: Detail dropdown selector
+  if (groupDetailSelect) {
+    groupDetailSelect.addEventListener("change", (e) => {
+      selectGroup(e.target.value);
+    });
+  }
+
+  // Tab Groups: Open all in group
+  if (btnOpenAllGroupUrls) {
+    btnOpenAllGroupUrls.addEventListener("click", () => {
+      if (!currentGroupBookmarks || currentGroupBookmarks.length === 0) {
+        showToast("No bookmarks to open in this group!", "info");
+        return;
+      }
+      const count = currentGroupBookmarks.length;
+      if (confirm(`Open all ${count} URLs in group '${currentSelectedGroup}' in separate tabs?`)) {
+        currentGroupBookmarks.forEach((bm) => {
+          browserAPI.tabs.create({ url: bm.url, active: false });
+        });
+        showToast(`Opened ${count} tabs for group '${currentSelectedGroup}'!`, "success");
+      }
+    });
+  }
+
+  // Tab Groups: Copy all URLs in group
+  if (btnCopyAllGroupUrls) {
+    btnCopyAllGroupUrls.addEventListener("click", () => {
+      if (!currentGroupBookmarks || currentGroupBookmarks.length === 0) {
+        showToast("No URLs to copy in this group!", "info");
+        return;
+      }
+      const urlsText = currentGroupBookmarks.map((bm) => bm.url).join("\n");
+      navigator.clipboard.writeText(urlsText);
+      showToast(`Copied ${currentGroupBookmarks.length} URLs to clipboard!`, "info", 2000);
+    });
+  }
+
+  // Tab Groups: Filter bookmarks within selected group
+  if (groupUrlsSearchBox && btnClearGroupUrlsSearch) {
+    let groupUrlsSearchTimeout = null;
+    groupUrlsSearchBox.addEventListener("input", () => {
+      const q = groupUrlsSearchBox.value.trim();
+      if (q) {
+        btnClearGroupUrlsSearch.classList.remove("hidden");
+      } else {
+        btnClearGroupUrlsSearch.classList.add("hidden");
+      }
+      clearTimeout(groupUrlsSearchTimeout);
+      groupUrlsSearchTimeout = setTimeout(() => {
+        renderGroupBookmarks(currentGroupBookmarks);
+      }, 150);
+    });
+
+    btnClearGroupUrlsSearch.addEventListener("click", () => {
+      groupUrlsSearchBox.value = "";
+      btnClearGroupUrlsSearch.classList.add("hidden");
+      renderGroupBookmarks(currentGroupBookmarks);
+      groupUrlsSearchBox.focus();
+    });
+  }
 }
 
 // Start

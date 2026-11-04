@@ -23,12 +23,21 @@ Esta extensão conecta seus navegadores favoritos diretamente à base de favorit
    - **"Open All in Tabs" (🚀):** Abre todos os links de uma tag/grupo em abas simultâneas no navegador com um clique (o equivalente do `C-c d b o` / `desktoping-buku-open-all-in-tag` do Emacs no navegador!).
    - Ações rápidas em cada link: Abrir em nova aba, abrir na aba atual, copiar link, editar tags ou deletar.
 
-3. 📑 **Salvar Abas Abertas em Lote (Batch Save / Staging):**
+3. 🏷️ **Diretório Alfabético de Tags / Grupos (Groups Tab):**
+   - Lista alfabética (A-Z) de todos os grupos e tags cadastrados no seu Buku com contadores de URLs.
+   - **Barra de Salto Rápido do Alfabeto:** Pressione qualquer letra (A, B, C...) para navegar instantaneamente até a seção correspondente.
+   - **Alternância de Ordenação:** Alterne com 1 clique entre ordenação alfabética (A-Z) ou por quantidade de favoritos (Count).
+   - **Filtro em Tempo Real:** Localize qualquer grupo rapidamente digitando no campo de pesquisa.
+   - **Visualização Detalhada do Grupo:** Ao clicar em um grupo, veja todas as URLs favoritadas nele, com links clicáveis, tags associadas e botões de ação rápida.
+   - **Abertura e Cópia em Lote:** Botão `🚀 Open All` para abrir todas as URLs do grupo de uma só vez em abas de segundo plano, e `📋 Copy All` para copiar todas as URLs para a área de transferência.
+   - **Seletor Rápido de Grupos:** Dropdown integrado no topo do detalhe para alternar rapidamente entre grupos sem precisar voltar à lista.
+
+4. 📑 **Salvar Abas Abertas em Lote (Batch Save / Staging):**
    - Lista todas as abas abertas da janela atual com título, favicon e checkbox.
    - Selecionar todas / desselecionar todas com 1 clique.
    - Definir uma tag/grupo (ex: `pesquisa-ia`, `projeto-x`) e salvar todas as abas selecionadas no Buku de uma só vez.
 
-4. ⚡ **Hub de Integração com o Emacs:**
+5. ⚡ **Hub de Integração com o Emacs:**
    - Status em tempo real do `emacsclient` (Online 🟢 / Offline ⚪).
    - Disparo direto de funções do seu `desktoping-apps.el` com um clique:
      - 🔍 `desktoping-buku-search-and-open` (`C-c d b s`)
@@ -38,11 +47,11 @@ Esta extensão conecta seus navegadores favoritos diretamente à base de favorit
      - 📖 `desktoping-buku-open-tutorial` (`C-c d b t`)
      - ➕ `desktoping-buku-add-bookmark` (`C-c d b a`) com a URL da aba preenchida!
 
-5. 🔎 **Pesquisa Direta na Barra de Endereços (Omnibox):**
+6. 🔎 **Pesquisa Direta na Barra de Endereços (Omnibox):**
    - Digite `bk` seguido de espaço na barra de endereços do navegador (ex: `bk emacs` ou `bk gnu`).
    - Os favoritos correspondentes aparecem diretamente no autocompletar da barra de endereços!
 
-6. 🔌 **Arquitetura de Comunicação Dupla (Dual-Driver):**
+7. 🔌 **Arquitetura de Comunicação Dupla (Dual-Driver):**
    - **Native Messaging Host (Padrão / Recomendado):** Comunicação stdio local direta via Python, sem portas abertas ou daemons em segundo plano.
    - **Local HTTP Bridge (Fallback Opcional):** Servidor REST local em `http://127.0.0.1:8765` caso você prefira rodar um serviço em background.
 

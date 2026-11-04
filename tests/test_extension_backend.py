@@ -100,6 +100,18 @@ class TestFzlEmacsBuku(unittest.TestCase):
         self.assertEqual(len(res["bookmarks"]), 1)
         self.assertEqual(res["bookmarks"][0]["url"], "https://gnu.org")
 
+    def test_get_tags_and_alphabetical_listing(self):
+        res = handle_get_tags({"db_path": self.db_path})
+        self.assertTrue(res["success"])
+        tag_names = [t["name"] for t in res["tags"]]
+        self.assertIn("emacs", tag_names)
+        self.assertIn("dev", tag_names)
+        self.assertIn("git", tag_names)
+        self.assertIn("foss", tag_names)
+        # Verify alphabetical sorting (case-insensitive)
+        alpha_sorted = sorted(res["tags"], key=lambda x: x["name"].lower())
+        self.assertEqual([t["name"] for t in alpha_sorted], ["dev", "emacs", "foss", "git"])
+
     def test_get_bookmarks_search_query(self):
         res = handle_get_bookmarks({"db_path": self.db_path, "query": "code hosting"})
         self.assertTrue(res["success"])

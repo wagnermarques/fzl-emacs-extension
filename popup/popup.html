@@ -37,6 +37,9 @@
       <button class="nav-tab" data-tab="tabSearch">
         <span class="tab-icon">🔍</span> Search (<span id="bookmarkTotalBadge">0</span>)
       </button>
+      <button class="nav-tab" data-tab="tabGroups">
+        <span class="tab-icon">🏷️</span> Groups (<span id="groupsTotalBadge">0</span>)
+      </button>
       <button class="nav-tab" data-tab="tabBatch">
         <span class="tab-icon">📑</span> Batch Tabs
       </button>
@@ -126,6 +129,82 @@
       <!-- Bookmarks List -->
       <div id="bookmarksList" class="bookmarks-list">
         <div class="empty-state">Loading bookmarks...</div>
+      </div>
+    </section>
+
+    <!-- Tab: Tag / Groups Directory -->
+    <section id="tabGroups" class="tab-panel">
+      <!-- View 1: Alphabetical Groups List -->
+      <div id="groupsListView" class="groups-list-view">
+        <div class="groups-header-sticky">
+          <div class="search-input-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="groupFilterInput" placeholder="Filter groups alphabetically..." autocomplete="off">
+            <button id="btnClearGroupFilter" class="clear-btn hidden" title="Clear filter">✕</button>
+          </div>
+
+          <div class="groups-subbar">
+            <span id="groupsCountSummary" class="groups-count-summary">0 groups</span>
+            <div class="groups-sort-toggle">
+              <button type="button" id="btnSortAlpha" class="sort-chip active" title="Sort alphabetically (A-Z)">A-Z</button>
+              <button type="button" id="btnSortCount" class="sort-chip" title="Sort by bookmark count">Count</button>
+            </div>
+          </div>
+
+          <!-- Alphabet Quick Jump Bar (A B C D ...) -->
+          <div id="alphabetJumpBar" class="alphabet-jump-bar"></div>
+        </div>
+
+        <!-- Alphabetical Groups List -->
+        <div id="groupsAlphabeticalList" class="groups-alphabetical-list">
+          <div class="empty-state">Loading groups...</div>
+        </div>
+      </div>
+
+      <!-- View 2: Selected Group Detail View (URLs in group) -->
+      <div id="groupDetailView" class="group-detail-view hidden">
+        <div class="group-detail-header">
+          <div class="group-detail-nav-row">
+            <button type="button" id="btnBackToGroups" class="btn btn-small btn-secondary" title="Return to alphabetical groups list">
+              ← All Groups
+            </button>
+            <div class="group-detail-select-wrap">
+              <select id="groupDetailSelect" class="group-detail-dropdown" title="Quickly switch to another group"></select>
+            </div>
+          </div>
+
+          <div class="group-detail-title-card">
+            <div class="group-detail-title-info">
+              <span class="group-title-icon">🏷️</span>
+              <div class="group-title-texts">
+                <span class="group-title-label">Group:</span>
+                <h2 id="groupDetailTitle" class="group-title-name">group-name</h2>
+              </div>
+              <span id="groupDetailCountBadge" class="badge">0 URLs</span>
+            </div>
+
+            <div class="group-detail-actions">
+              <button type="button" id="btnOpenAllGroupUrls" class="btn btn-small btn-primary" title="Open all URLs in separate tabs">
+                🚀 Open All
+              </button>
+              <button type="button" id="btnCopyAllGroupUrls" class="btn btn-small btn-secondary" title="Copy all URLs in group to clipboard">
+                📋 Copy All
+              </button>
+            </div>
+          </div>
+
+          <!-- Group Bookmarks Filter -->
+          <div class="search-input-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="groupUrlsSearchBox" placeholder="Filter bookmarks in this group...">
+            <button id="btnClearGroupUrlsSearch" class="clear-btn hidden" title="Clear search">✕</button>
+          </div>
+        </div>
+
+        <!-- Bookmarks List in Group -->
+        <div id="groupBookmarksList" class="bookmarks-list">
+          <!-- Dynamically populated bookmarks -->
+        </div>
       </div>
     </section>
 
